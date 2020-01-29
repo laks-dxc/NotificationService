@@ -1,0 +1,29 @@
+{
+  "name": "notificationservice",
+  "version": "1.0.0",
+  "description": "Notification Service App using Nodejs and AWS",
+  "main": "index.js",
+  "dependencies": {
+    "aws-sdk": "^2.608.0",
+    "body-parser": "~1.0.1",
+    "express": "^4.17.1",
+    "fs-extra": "^7.0.1",
+    "mssql": "^4.3.7",
+    "q": "^1.5.1",
+    "request": "^2.88.0"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/excell-media/NotificationService.git"
+  },
+  "author": "Lakshman Rao, Pilaka",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/excell-media/NotificationService/issues"
+  },
+  "homepage": "https://github.com/excell-media/NotificationService#readme"
+}

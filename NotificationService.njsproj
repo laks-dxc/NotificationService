@@ -35,7 +35,13 @@
     <None Include="ReadMe.txt" />
   </ItemGroup>
   <ItemGroup>
+    <Content Include="helpers.js">
+      <SubType>Code</SubType>
+    </Content>
     <Content Include="index.js" />
+    <Content Include="messageClassifier.js">
+      <SubType>Code</SubType>
+    </Content>
   </ItemGroup>
   <Import Project="$(VSToolsPath)\Node.js Tools\Microsoft.NodejsTools.targets" />
 </Project>
