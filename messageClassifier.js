@@ -9,6 +9,8 @@ var aws_local_config = {
     endpoint: 'http://localhost:8000'
 };
 
+var dynamoDBObjects = [];
+
 const MAIN_MESSAGE_QUEUE_URL = "https://sqs.us-east-2.amazonaws.com/209452574116/mainMessageQueue";
 const SMS_MESSAGE_QUEUE_URL = "https://sqs.us-east-2.amazonaws.com/209452574116/smsQueue";
 const EMAIL_MESSAGE_QUEUE_URL = "https://sqs.us-east-2.amazonaws.com/209452574116/emailQueue";
@@ -27,12 +29,11 @@ function readMessage() {
         if (err) console.log(err, err.stack); // an error occurred
         else {
             if (response.Messages) {
-                var dynamoDBObjects = [];
+                dynamoDBObjects = [];
 
                 //console.log("=================================================")
                 console.log("Received ", response.Messages.length + " messages");
                 response.Messages.forEach((message, index) => {
-                    console.log('index', index);
                     const MessageId = message.MessageId;
 
                     const Body = message.Body;
@@ -40,9 +41,9 @@ function readMessage() {
                     dynamoDBObjects[index] = dynamoDBObject;
 
                     Q()
-                        .then(classifyMessage(Body, index))
-                        .then(insertIntoDynamoDB("MESSAGES", dynamoDBObjects[index]))
-                        .then(deleteMessageFromMainQueue(message.ReceiptHandle))
+                        .then(() => { return classifyMessage(Body, index) })
+                        .then(() => { return insertIntoDynamoDB("MESSAGES", dynamoDBObjects[index]) })
+                        .then(() => { return deleteMessageFromMainQueue(message.ReceiptHandle) })
                 });
             }
             else {
@@ -62,54 +63,54 @@ function classifyMessage(_messageBody, messageIndex) {
 
         var smsRequired = checkSMSRequired(messageBody);
         var emailRequired = checkEmailRequired(messageBody);
-        var smsConfig = null, emailConfig = null;
 
-        smsConfig = smsRequired ? getSMSConfig(missionCode, countryCode, vacCode, scanCode) : {};
-        emailConfig = emailRequired ? getEmailConfig(missionCode, countryCode, vacCode, scanCode) : {};
+        var smsConfig = smsRequired ? getSMSConfig(messageBody) : 'NA';
+        var emailConfig = emailRequired ? getEmailConfig(messageBody) : 'NA';
 
-        dynamoDBObjects[messageIndex].smsConfig = smsConfig;
+        dynamoDBObjects[messageIndex].smsConfigAvailable = smsConfig === null ? true : false;
         dynamoDBObjects[messageIndex].smsRequired = smsRequired;
-        dynamoDBObjects[messageIndex].emailConfig = emailConfig;
+        dynamoDBObjects[messageIndex].emailConfigAvailable = emailConfig === null ? true : false;
         dynamoDBObjects[messageIndex].emailRequired = emailRequired;
 
-        console.log('');
-        console.log('// ** Classification Start ** //')
         console.log('');
         console.log("Mission / Country / VAC --> ", missionCode, countryCode, vacCode);
         console.log("Scan Code --> ", scanCode);
         console.log("SMS Required --> ", smsRequired, ", Email Required --> ", emailRequired);
         console.log("SMS Config --> ", smsConfig, ", Email Config --> ", emailConfig);
         console.log('');
-        console.log('// ** Classification End**  //')
-        console.log('');
+
 
         Promise.all([
             new Promise((resolve, reject) => {
-                if (smsConfig) {
+                if (smsRequired && smsConfig != null) {
                     sendMessage(SMS_MESSAGE_QUEUE_URL, messageBody)
                         .then(() => {
-                            console.log('Message saved to SMS Queue')
-                            dynamoDBObjects[messageIndex].smsQueuedTime = new Date();
+                            console.log('Message sent to SMS Queue')
+                            dynamoDBObjects[messageIndex].smsQueuedTime = new Date().toISOString();
+
                             resolve();
                         })
                         .catch((err) => {
-                            console.log('Error saving in SMS Queue')
-
+                            console.log('Error saving in SMS Queue', err)
                             dynamoDBObjects[messageIndex].smsQueueInsertError = err;
                             resolve();
                         })
                 }
                 else
+                {
+                    console.log('Not Sending SMS');
                     resolve();
+
+                }
             }),
 
             new Promise((resolve, reject) => {
-                if (emailConfig) {
+                if (emailRequired && emailConfig != null) {
                     sendMessage(EMAIL_MESSAGE_QUEUE_URL, messageBody)
                         .then(() => {
-                            console.log('Message saved to Email Queue')
+                            console.log('Message sent to Email Queue')
 
-                            dynamoDBObjects[messageIndex].emailQueuedTime = new Date();
+                            dynamoDBObjects[messageIndex].emailQueuedTime = new Date().toISOString();
                             resolve();
                         })
                         .catch((err) => {
@@ -120,7 +121,11 @@ function classifyMessage(_messageBody, messageIndex) {
                         })
                 }
                 else
+                {
+                    console.log('Not Sending Email');
                     resolve();
+
+                }
             }),
 
             new Promise((resolve, reject) => {
@@ -142,6 +147,7 @@ function classifyMessage(_messageBody, messageIndex) {
             })
         ])
             .then(() => {
+
                 resolve();
             })
 
@@ -152,23 +158,45 @@ function sendToNoConfigDB(a, b) {
     return new Promise((resolve, reject) => { resolve() });
 }
 
-function getSMSConfig(missionCode, countryCode, vacCode, scanCode) {
-    return true;
+function getSMSConfig(messageBody) {
+
+    try {
+        return messageBody.BulkSMSRequests[0].SMSRequest.smsConfig
+    }
+    catch (ex) {
+        return {}
+    }
+
 }
 
-function getEmailConfig(missionCode, countryCode, vacCode, scanCode) {
-    return true;
+function getEmailConfig(messageBody) {
+    try {
+        return messageBody.BulkSMSRequests[0].SMSRequest.emailConfig
+    }
+    catch (ex) {
+        return {}
+    }
 }
 
 function checkSMSRequired(messageBody) {
-    var phoneNo = messageBody.BulkSMSRequests[0].SMSRequest.smsConfig.phoneNo;
-    return phoneNo && phoneNo != "";
+    try {
+        var phoneNo = messageBody.BulkSMSRequests[0].SMSRequest.smsConfig.phoneNo;
+        return phoneNo != "";
+    }
+    catch (ex) {
+        return false;
+    }
+
 }
 
 function checkEmailRequired(messageBody) {
-    var emailId = messageBody.BulkSMSRequests[0].SMSRequest.emailConfig.emailId;
-    return emailId && emailId != "";
-
+    try {
+        var emailId = messageBody.BulkSMSRequests[0].SMSRequest.emailConfig.emailId;
+        return emailId != "";
+    }
+    catch (ex) {
+        return false;
+    }
 }
 
 function deleteMessageFromMainQueue(receiptHandle) {
@@ -190,38 +218,17 @@ function deleteMessageFromMainQueue(receiptHandle) {
     })
 }
 
-//function saveMessageInDynamoDB(message) {
 
-
-//    return new Promise((resolve, reject) => {
-//        AWS.config.update(aws_local_config);
-
-//        const docClient = new AWS.DynamoDB.DocumentClient();
-
-//        items = helpers.jsonConcat({ Id: (Math.random() * 1000).toString() }, message);
-//        var insertParams = {
-//            TableName: "YOUR_TABLE_NAME",
-//            Item: items
-//        };
-
-//        docClient.put(insertParams, (err, data) => {
-//            if (!err) {
-//                console.log('Added message contents to dynamo db')
-//                resolve();
-//            }
-//            else {
-//                console.log("error adding to dynamodb ", err);
-//                reject();
-//            }
-//        });
-//    })
-//}
 
 function insertIntoDynamoDB(tableName, data) {
+    console.log('')
+    console.log('inserting into db')
+    console.log('')
 
     AWS.config.update(aws_local_config);
     const docClient = new AWS.DynamoDB.DocumentClient();
 
+    // console.log('db before insert', data);
     var Items = helpers.jsonConcat({ Id: (Math.random() * 1000).toString() }, data);
 
     return new Promise((resolve, reject) => {
@@ -252,4 +259,4 @@ function sendMessage(queueURL, event) {
 
 
 readMessage();
-//setInterval(readMessage, 5000);
+setInterval(readMessage, 2000);

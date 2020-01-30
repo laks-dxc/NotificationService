@@ -86,7 +86,7 @@ router.get('/value', (req, res) => {
 
     docClient.scan(params, (err, data) => {
         if (!err)
-            res.status(200).send(data);
+            res.status(200).send(data.Items);
         else
             res.status(500).send({ "err": err });
     });
