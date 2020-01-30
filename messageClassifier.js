@@ -67,6 +67,8 @@ function classifyMessage(_messageBody, messageIndex) {
         var smsConfig = smsRequired ? getSMSConfig(messageBody) : 'NA';
         var emailConfig = emailRequired ? getEmailConfig(messageBody) : 'NA';
 
+        console.log('smsConfig', smsConfig);
+
         dynamoDBObjects[messageIndex].smsConfigAvailable = smsConfig === null ? true : false;
         dynamoDBObjects[messageIndex].smsRequired = smsRequired;
         dynamoDBObjects[messageIndex].emailConfigAvailable = emailConfig === null ? true : false;
@@ -83,11 +85,12 @@ function classifyMessage(_messageBody, messageIndex) {
         Promise.all([
             new Promise((resolve, reject) => {
                 if (smsRequired && smsConfig != null) {
+                    messageBody["smsConfigTemplate"] = smsConfig;
+                    console.log('message body before sending to queue', messageBody)
                     sendMessage(SMS_MESSAGE_QUEUE_URL, messageBody)
                         .then(() => {
                             console.log('Message sent to SMS Queue')
                             dynamoDBObjects[messageIndex].smsQueuedTime = new Date().toISOString();
-
                             resolve();
                         })
                         .catch((err) => {
@@ -96,8 +99,7 @@ function classifyMessage(_messageBody, messageIndex) {
                             resolve();
                         })
                 }
-                else
-                {
+                else {
                     console.log('Not Sending SMS');
                     resolve();
 
@@ -106,10 +108,10 @@ function classifyMessage(_messageBody, messageIndex) {
 
             new Promise((resolve, reject) => {
                 if (emailRequired && emailConfig != null) {
+                    messageBody["emailConfig"] = emailConfig;
                     sendMessage(EMAIL_MESSAGE_QUEUE_URL, messageBody)
                         .then(() => {
                             console.log('Message sent to Email Queue')
-
                             dynamoDBObjects[messageIndex].emailQueuedTime = new Date().toISOString();
                             resolve();
                         })
@@ -120,8 +122,7 @@ function classifyMessage(_messageBody, messageIndex) {
                             resolve();
                         })
                 }
-                else
-                {
+                else {
                     console.log('Not Sending Email');
                     resolve();
 
@@ -161,7 +162,10 @@ function sendToNoConfigDB(a, b) {
 function getSMSConfig(messageBody) {
 
     try {
-        return messageBody.BulkSMSRequests[0].SMSRequest.smsConfig
+        const language = messageBody.BulkSMSRequests[0].SMSRequest.smsConfig.language;
+        const { missionCode, countryCode, vacCode, scanCode } = messageBody.BulkSMSRequests[0].SMSRequest;
+        // return messageBody.BulkSMSRequests[0].SMSRequest.smsConfig
+        return { missionCode, countryCode, vacCode, scanCode, language, smsTemplate: "SMS_TEMPLATE_001" };
     }
     catch (ex) {
         return {}
@@ -171,7 +175,7 @@ function getSMSConfig(messageBody) {
 
 function getEmailConfig(messageBody) {
     try {
-        return messageBody.BulkSMSRequests[0].SMSRequest.emailConfig
+        return {};//messageBody.BulkSMSRequests[0].SMSRequest.emailConfig
     }
     catch (ex) {
         return {}
@@ -217,8 +221,6 @@ function deleteMessageFromMainQueue(receiptHandle) {
         })
     })
 }
-
-
 
 function insertIntoDynamoDB(tableName, data) {
     console.log('')

@@ -1,0 +1,54 @@
+[
+    {
+        "mission": "GBR",
+        "country": "IND",
+        "vac": "PNQ",
+        "scanCode": "VAC to Courier Outscan",
+        "language": "English",
+        "SMS": {
+            "templanteName":"SMS_TEMPLATE_001",
+            "message": {
+                "structure": "Dear <0> <1>, this is the notification message.",
+                "params": [
+                    "firstName",
+                    "lastName"
+                ]
+            }
+        },
+        "Email": {
+
+        },
+        "Voice": {
+
+        },
+        "Whatsapp": {
+
+        }
+    },
+    {
+        "mission": "GBR",
+        "country": "UAE",
+        "vac": "VAC",
+        "scanCode": "VAC to Courier Outscan",
+        "language": "Arabic",
+        "SMS": {
+            "templanteName":"SMS_TEMPLATE_003",
+            "message": {
+                "structure": ",<1> <0> مرحبا. شكرا لك على اهتمامك",
+                "params": [
+                    "firstName",
+                    "lastName"
+                ]
+            }
+        },
+        "Email": {
+
+        },
+        "Voice": {
+
+        },
+        "Whatsapp": {
+
+        }
+    }
+]
