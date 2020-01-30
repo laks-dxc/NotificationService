@@ -259,4 +259,4 @@ function sendMessage(queueURL, event) {
 
 
 readMessage();
-setInterval(readMessage, 2000);
+setInterval(readMessage, 10000);
