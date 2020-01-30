@@ -8,11 +8,11 @@ module.exports = [
         "Sms": {
             "templateName":"TIVRE_HTTP",
             "message": {
-                "structure": "Dear [0] [1], this is notification for scan code [2]",
+                "structure": "Dear {0} {1}, this is notification for scan code {2}",
                 "params": [
                     "firstName",
                     "lastName",
-                    "scancode"
+                    "scanCode"
                 ]
             }
         },
@@ -27,15 +27,15 @@ module.exports = [
         }
     },
     {
-        "mission": "GBR",
-        "country": "UAE",
-        "vac": "ABD",
+        "missionCode": "GBR",
+        "countryCode": "UAE",
+        "vacCode": "ABD",
         "scanCode": "VAC to Courier Outscan",
         "language": "Arabic",
-        "SMS": {
+        "Sms": {
             "templateName":"TIVRE_UNICODE",
             "message": {
-                "structure": ",[0] [1] مرحبا. شكرا لك على اهتمامك",
+                "structure": ",{0} {1} مرحبا. شكرا لك على اهتمامك",
                 "params": [
                     "firstName",
                     "lastName"

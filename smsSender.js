@@ -1,6 +1,6 @@
 var AWS = require('aws-sdk');
 var request = require('request');
-
+var vendorTemplate = require('./config/notification/vendorTemplates');
 AWS.config.update({ region: 'us-east-2' });
 var sqs = new AWS.SQS({ apiVersion: '2012-11-05' });
 
@@ -20,41 +20,63 @@ function readMessage() {
             console.log(err, err.stack); // an error occurred
         else {
             if (response.Messages && response.Messages.length > 0) {
-                var messageObject = JSON.parse(response.Messages[0].Body).BulkSMSRequests[0].SMSRequest;
-                console.log(response.Messages);
-                const { missionCode, countryCode, vacCode, firstName, lastName, scanCode } = messageObject;
-                var options = {
-                    'method': 'POST',
-                    // 'url': encodeURI(prepareURL('tempalte',"مرحبا. شكرا لك على اهتمامك")), //message
-                    
-                    'url': encodeURI(prepareURL('template',"నేను నిన్ను ప్రేమిస్తున్నాను")), //message
 
-                    'headers': {
-                    }
-                };
 
-                request(options, function (error, response) {
-                    if (error) throw new Error(error);
-                   responseBody =  response.body.replace('<meta http-equiv=Content-Type content="text/html; charset=utf-8">', '');
-                    console.log("SMS Sent with response:", responseBody.trim());
+                var parsedBody = JSON.parse(response.Messages[0].Body);
+                var messageObject = parsedBody.BulkSMSRequests[0].SMSRequest;
+                const { firstName, lastName } = messageObject;
 
-                });
+                const phoneNo = messageObject.smsConfig.phoneNo;
+
+
+                const template = parsedBody.smsConfigTemplate;
+                var rawMessage = template["message"]["structure"];
+                var generatedMessage = String.format(rawMessage, firstName, lastName, messageObject["scanCode"]);
+                sendSMS(template["templateName"], generatedMessage, phoneNo).then((_response) => {
+                    console.log('SMS Sent with responseId:', _response, ' --> will be saved against messageId ' + parsedBody.OriginalMessageId);
+                    deleteMessageFromQueue(SMS_MESSAGE_QUEUE_URL, response.Messages[0].ReceiptHandle, 'SMS Queue').then((res) => {
+                        console.log('');
+                    })
+                })
+
             }
 
             else {
                 console.log('No Messages in SMS Queue ')
+                console.log('');
+
             }
         }
     })
+}
+
+function sendSMS(templateName, message, phoneNo, messageId = '12345') {
+    return new Promise((resolve, reject) => {
+
+        var url = String.format(vendorTemplate[templateName].Url, message, phoneNo, messageId)
+        // console.log('url', url);
+        var options = {
+            'method': 'POST',
+            'url': encodeURI(url), //message
+        };
+
+        request(options, function (error, response) {
+            if (error) reject(error);
+            else {
+                responseBody = response.body.replace('<meta http-equiv=Content-Type content="text/html; charset=utf-8">', '');
+                resolve(responseBody.trim())
+            }
+        });
+    });
+
+
 }
 
 
 
 readMessage();
 
-function prepareURL(template, message) {
-    return 'http://sg.tivre.com/httppush/send_smsSch_unicode.asp?userid=Test_test_sms@vfsglobal.com&password=Test@121&msg=' + message + '&mobnum=918309038636&senderid=VFSSMS&msgId=123456&qrytype=impalert&TivreId=1&param4=1';
-}
+
 
 setInterval(readMessage, 5000);
 
@@ -74,7 +96,7 @@ function deleteMessageFromQueue(queueURL, receiptHandle, queueName = '') {
 
         sqs.deleteMessage(deleteParams, (err, response) => {
             if (!err) {
-                console.log('Message deleted from Queue:', queueName, 'with response', response);
+                console.log('Message deleted from Queue:', queueName);
                 resolve();
             }
             else {
@@ -82,4 +104,16 @@ function deleteMessageFromQueue(queueURL, receiptHandle, queueName = '') {
             }
         })
     })
+}
+
+if (!String.format) {
+    String.format = function (format) {
+        var args = Array.prototype.slice.call(arguments, 1);
+        return format.replace(/{(\d+)}/g, function (match, number) {
+            return typeof args[number] != 'undefined'
+                ? args[number]
+                : match
+                ;
+        });
+    };
 }

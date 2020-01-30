@@ -34,7 +34,6 @@ function readMessage() {
             if (response.Messages) {
                 dynamoDBObjects = [];
 
-                //console.log("=================================================")
                 console.log("Received ", response.Messages.length + " messages");
                 response.Messages.forEach((message, index) => {
                     const MessageId = message.MessageId;
@@ -44,7 +43,7 @@ function readMessage() {
                     dynamoDBObjects[index] = dynamoDBObject;
 
                     Q()
-                        .then(() => { return classifyMessage(Body, index) })
+                        .then(() => { return classifyMessage(dynamoDBObjects[index], index) })
                         .then(() => { return insertIntoDynamoDB("MESSAGES", dynamoDBObjects[index]) })
                         .then(() => { return deleteMessageFromMainQueue(message.ReceiptHandle) })
                 });
@@ -60,8 +59,8 @@ function readMessage() {
 function classifyMessage(_messageBody, messageIndex) {
     return new Promise((resolve, reject) => {
 
-        var messageBody = JSON.parse(_messageBody);
-
+        var messageBody = JSON.parse(_messageBody.Body);
+        messageBody.OriginalMessageId = _messageBody.OriginalMessageId;
         const { missionCode, countryCode, vacCode, scanCode } = messageBody.BulkSMSRequests[0].SMSRequest;
 
         var smsRequired = checkSMSRequired(messageBody);
@@ -165,16 +164,18 @@ function getSMSConfig(messageBody) {
 
         for (let i = 0; i < dataConfig.length; i++) {
             var config = dataConfig[i];
-            if (config.missionCode == missionCode
-                && config.countryCode == countryCode
+            if (
+                config.missionCode == missionCode
+                && 
+                config.countryCode == countryCode
                 && config.vacCode == vacCode
                 && config.scanCode == scanCode
                 && config.language == language
-                ) 
-                return { templateName: config.Sms.templateName };
-            
-          }
-          return {};
+            )
+                return config.Sms;
+
+        }
+        return {};
 
 
         // dataConfig.forEach((config, index) => {
@@ -187,7 +188,7 @@ function getSMSConfig(messageBody) {
         //         ) 
         //         return { templateName: config.Sms.templateName };
         //         // break;
-            
+
         // });
         // return {};
 
