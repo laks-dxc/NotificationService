@@ -2,6 +2,9 @@ var AWS = require('aws-sdk');
 AWS.config.update({ region: 'us-east-2' });
 const Q = require('q');
 var helpers = require('./helpers.js');
+var dataConfig = require('./config/notification/dataConfig')
+
+
 
 var sqs = new AWS.SQS({ apiVersion: '2012-11-05' });
 var aws_local_config = {
@@ -67,7 +70,6 @@ function classifyMessage(_messageBody, messageIndex) {
         var smsConfig = smsRequired ? getSMSConfig(messageBody) : 'NA';
         var emailConfig = emailRequired ? getEmailConfig(messageBody) : 'NA';
 
-        console.log('smsConfig', smsConfig);
 
         dynamoDBObjects[messageIndex].smsConfigAvailable = smsConfig === null ? true : false;
         dynamoDBObjects[messageIndex].smsRequired = smsRequired;
@@ -86,7 +88,7 @@ function classifyMessage(_messageBody, messageIndex) {
             new Promise((resolve, reject) => {
                 if (smsRequired && smsConfig != null) {
                     messageBody["smsConfigTemplate"] = smsConfig;
-                    console.log('message body before sending to queue', messageBody)
+
                     sendMessage(SMS_MESSAGE_QUEUE_URL, messageBody)
                         .then(() => {
                             console.log('Message sent to SMS Queue')
@@ -125,7 +127,6 @@ function classifyMessage(_messageBody, messageIndex) {
                 else {
                     console.log('Not Sending Email');
                     resolve();
-
                 }
             }),
 
@@ -148,10 +149,8 @@ function classifyMessage(_messageBody, messageIndex) {
             })
         ])
             .then(() => {
-
                 resolve();
             })
-
     })
 }
 
@@ -160,12 +159,40 @@ function sendToNoConfigDB(a, b) {
 }
 
 function getSMSConfig(messageBody) {
-
     try {
         const language = messageBody.BulkSMSRequests[0].SMSRequest.smsConfig.language;
         const { missionCode, countryCode, vacCode, scanCode } = messageBody.BulkSMSRequests[0].SMSRequest;
-        // return messageBody.BulkSMSRequests[0].SMSRequest.smsConfig
-        return { missionCode, countryCode, vacCode, scanCode, language, smsTemplate: "SMS_TEMPLATE_001" };
+
+        for (let i = 0; i < dataConfig.length; i++) {
+            var config = dataConfig[i];
+            if (config.missionCode == missionCode
+                && config.countryCode == countryCode
+                && config.vacCode == vacCode
+                && config.scanCode == scanCode
+                && config.language == language
+                ) 
+                return { templateName: config.Sms.templateName };
+            
+          }
+          return {};
+
+
+        // dataConfig.forEach((config, index) => {
+        //     console.log('index', index, "config.missionCode , missionCode", config.missionCode , missionCode);
+        //     if (config.missionCode == missionCode
+        //         // && config.countryCode == countryCode
+        //         // && config.vacCode == vacCode
+        //         // && config.scanCode == scanCode
+        //         // && config.language == language
+        //         ) 
+        //         return { templateName: config.Sms.templateName };
+        //         // break;
+            
+        // });
+        // return {};
+
+
+        // return { missionCode, countryCode, vacCode, scanCode, language, smsTemplate: "SMS_TEMPLATE_001" };
     }
     catch (ex) {
         return {}

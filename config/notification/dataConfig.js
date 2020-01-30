@@ -1,17 +1,18 @@
-[
+module.exports = [
     {
-        "mission": "GBR",
-        "country": "IND",
-        "vac": "PNQ",
+        "missionCode": "GBR",
+        "countryCode": "IND",
+        "vacCode": "PNQ",
         "scanCode": "VAC to Courier Outscan",
         "language": "English",
-        "SMS": {
-            "templanteName":"SMS_TEMPLATE_001",
+        "Sms": {
+            "templateName":"TIVRE_HTTP",
             "message": {
-                "structure": "Dear <0> <1>, this is the notification message.",
+                "structure": "Dear [0] [1], this is notification for scan code [2]",
                 "params": [
                     "firstName",
-                    "lastName"
+                    "lastName",
+                    "scancode"
                 ]
             }
         },
@@ -28,13 +29,13 @@
     {
         "mission": "GBR",
         "country": "UAE",
-        "vac": "VAC",
+        "vac": "ABD",
         "scanCode": "VAC to Courier Outscan",
         "language": "Arabic",
         "SMS": {
-            "templanteName":"SMS_TEMPLATE_003",
+            "templateName":"TIVRE_UNICODE",
             "message": {
-                "structure": ",<1> <0> مرحبا. شكرا لك على اهتمامك",
+                "structure": ",[0] [1] مرحبا. شكرا لك على اهتمامك",
                 "params": [
                     "firstName",
                     "lastName"
