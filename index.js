@@ -32,22 +32,23 @@ router.get('/', function (req, res) {
 
 router.post('/message/send', (req, res) => {
 
-    var response = {
-        messageReceivedTime: moment().unix()
-    };
+    messageBody = req.body;
 
-    var messageBody = req.body;
+    var response = {
+        messageReceivedTime: moment().unix(),
+        messageBody: JSON.stringify(messageBody)
+    };
 
     sendMessage(messageBody)
         .then(succesMessage => {
             response.messageId = succesMessage.MessageId;
-            response.messageBody = JSON.stringify(messageBody);
             return response;
         })
         .then(content => {
-            helpers.addToDynamoDB(local_config.DYNAMO_DB.messages_table, content)
+            var params = { TableName: local_config.DYNAMO_DB.messages_table, Item: content }
+            helpers.addToDynamoDB(params)
                 .then(() => res.status(200).send(content))
-                .catch((err) => res.status(500).send({ error_type: 'DB', 'err': err }));
+                .catch(err => res.status(500).send({ error_type: 'DB', 'err': err }));
         })
         .catch(err => res.status(500).send({ error_type: 'QUEUE', 'err': err }));
 });
@@ -58,5 +59,6 @@ function sendMessage(event) {
 };
 
 app.listen(port);
+
 
 console.log('API Started on ' + port);

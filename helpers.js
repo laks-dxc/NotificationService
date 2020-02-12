@@ -10,10 +10,10 @@ module.exports = {
         }
         return o1;
     },
-    addToDynamoDB: (TableName, Item) => {
-        return new Promise((resolve, reject) => {
-            var params = { TableName, Item };
-            docClient.put(params, (err) => err ? reject(err) : resolve());
-        })
+    addToDynamoDB: (params) => {
+        return new Promise((resolve, reject) => docClient.put(params, (err) => err ? reject(err) : resolve()))
+    },
+    getDataFromDynamoDB: (params) => {
+        return new Promise((resolve, reject) => docClient.query(params, (err) => err ? reject(err) : resolve()))
     }
 }
