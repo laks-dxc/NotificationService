@@ -42,7 +42,7 @@ function readMessage() {
             }
 
             else {
-                console.log('No Messages in SMS Queue ')
+                console.log('SMS Queue is empty.. retrying.. ')
                 console.log('');
 
             }

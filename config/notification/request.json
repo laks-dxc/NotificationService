@@ -1,0 +1,40 @@
+{
+	"BulkSMSRequests": [{
+		"SMSRequest": {
+			"missionCode": "GBR",
+			"countryCode": "IND",
+			"vacCode": "PNQ",
+			"scanCode": "VAC to Courier Outscan",
+			"aurn": "PNQ11/240120/00011/007",
+			"trackingNo": "",
+			"firstName": "Amol",
+			"lastName": "Ahire",
+			"interviewScheduledDate": "",
+			"nationalityCode": "aaa",
+			"awbNo": "",
+			"courierPartner": "",
+			"smsConfig": {
+				"phoneNo": "9970283058",
+				"fromBranch": "Mumbai",
+				"toBranch": "Mumbai",
+				"language": "English"
+			},
+			"autoCallDialerConfig": {
+				"phoneNo": null,
+				"language": "English"
+			},
+			"emailConfig": {
+				"emailId": "aahire3@dxc.com"
+			},
+			"otherParams": {
+				"reqParam1": null,
+				"reqParam2": null,
+				"reqParam3": null,
+				"reqParam4": null,
+				"reqParam5": null,
+				"reqParam6": null
+			},
+			"ivrConfig": {}
+		}
+	}]
+}

@@ -1,5 +1,5 @@
 var AWS = require('aws-sdk');
-AWS.config.update({ region: 'us-east-2' });
+AWS.config.update({ region: 'ap-south-2' });
 const Q = require('q');
 var helpers = require('./helpers.js');
 var dataConfig = require('./config/notification/dataConfig')
@@ -50,7 +50,7 @@ function readMessage() {
             }
             else {
                 console.log("");
-                console.log("No messages found.. retrying.. ");
+                console.log("Main Message Queue is empty.. retrying.. ");
             }
         }
     });
@@ -70,17 +70,17 @@ function classifyMessage(_messageBody, messageIndex) {
         var emailConfig = emailRequired ? getEmailConfig(messageBody) : 'NA';
 
 
-        dynamoDBObjects[messageIndex].smsConfigAvailable = smsConfig === null ? true : false;
+        dynamoDBObjects[messageIndex].smsConfigAvailable = smsConfig === null ? false : true;
         dynamoDBObjects[messageIndex].smsRequired = smsRequired;
-        dynamoDBObjects[messageIndex].emailConfigAvailable = emailConfig === null ? true : false;
+        dynamoDBObjects[messageIndex].emailConfigAvailable = emailConfig === null ? false : true;
         dynamoDBObjects[messageIndex].emailRequired = emailRequired;
 
-        console.log('');
-        console.log("Mission / Country / VAC --> ", missionCode, countryCode, vacCode);
-        console.log("Scan Code --> ", scanCode);
-        console.log("SMS Required --> ", smsRequired, ", Email Required --> ", emailRequired);
-        console.log("SMS Config --> ", smsConfig, ", Email Config --> ", emailConfig);
-        console.log('');
+        // console.log('');
+        // console.log("Mission / Country / VAC --> ", missionCode, countryCode, vacCode);
+        // console.log("Scan Code --> ", scanCode);
+        // console.log("SMS Required --> ", smsRequired, ", Email Required --> ", emailRequired);
+        // console.log("SMS Config --> ", smsConfig, ", Email Config --> ", emailConfig);
+        // console.log('');
 
 
         Promise.all([
@@ -101,7 +101,7 @@ function classifyMessage(_messageBody, messageIndex) {
                         })
                 }
                 else {
-                    console.log('Not Sending SMS');
+                    console.log('SMS Config not found. Saving ', JSON.stringify({ missionCode, countryCode, vacCode, scanCode, msgArray: [messageBody.OriginalMessageId] }), 'to sms_no_config_db table');
                     resolve();
 
                 }
@@ -124,26 +124,23 @@ function classifyMessage(_messageBody, messageIndex) {
                         })
                 }
                 else {
+                    console.log('');
                     console.log('Not Sending Email');
                     resolve();
                 }
             }),
 
             new Promise((resolve, reject) => {
-                if (smsRequired && !smsConfig) {
-                    sendToNoConfigDB(messageBody, 'SMS')
-                    resolve();
-                }
-                else
+                (smsRequired && !smsConfig) ?
+                    sendToNoConfigDB(messageBody, 'SMS').then(() => resolve())
+                    :
                     resolve();
             }),
 
             new Promise((resolve, reject) => {
-                if (emailRequired && !emailConfig) {
-                    sendToNoConfigDB(messageBody, 'Email');
-                    resolve();
-                }
-                else
+                (emailRequired && !emailConfig) ?
+                    sendToNoConfigDB(messageBody, 'Email').then(() => resolve())
+                    :
                     resolve();
             })
         ])
@@ -166,7 +163,7 @@ function getSMSConfig(messageBody) {
             var config = dataConfig[i];
             if (
                 config.missionCode == missionCode
-                && 
+                &&
                 config.countryCode == countryCode
                 && config.vacCode == vacCode
                 && config.scanCode == scanCode
@@ -175,7 +172,7 @@ function getSMSConfig(messageBody) {
                 return config.Sms;
 
         }
-        return {};
+        return null;
 
 
         // dataConfig.forEach((config, index) => {
@@ -196,17 +193,17 @@ function getSMSConfig(messageBody) {
         // return { missionCode, countryCode, vacCode, scanCode, language, smsTemplate: "SMS_TEMPLATE_001" };
     }
     catch (ex) {
-        return {}
+        return null
     }
 
 }
 
 function getEmailConfig(messageBody) {
     try {
-        return {};//messageBody.BulkSMSRequests[0].SMSRequest.emailConfig
+        return null;//messageBody.BulkSMSRequests[0].SMSRequest.emailConfig
     }
     catch (ex) {
-        return {}
+        return null;
     }
 }
 
