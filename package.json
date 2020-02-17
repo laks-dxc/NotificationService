@@ -4,6 +4,7 @@
   "description": "Notification Service App using Nodejs and AWS",
   "main": "index.js",
   "dependencies": {
+    "amazon-dax-client": "^1.2.3",
     "aws-sdk": "^2.608.0",
     "body-parser": "~1.0.1",
     "express": "^4.17.1",
