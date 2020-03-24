@@ -24,7 +24,8 @@
 				"language": "English"
 			},
 			"emailConfig": {
-				"emailId": "aahire3@dxc.com"
+				"emailId": "aahire3@dxc.com",
+				"attachment":""
 			},
 			"otherParams": {
 				"reqParam1": null,

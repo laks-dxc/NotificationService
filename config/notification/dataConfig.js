@@ -5,50 +5,34 @@ module.exports =
     "vacCode": "PNQ",
     "scanCode": "VAC to Courier Outscan",
     "language": "English",
-    "Sms": {
-        "templateName": "TIVRE_HTTP",
-        "message": {
-            "structure": "Dear {0} {1}, this is notification for scan code {2}",
-            "params": [
-                "firstName",
-                "lastName",
-                "scanCode"
-            ]
+    
+    "notifications": [
+        {
+            "notificationType": "sms",
+            "priority":"2",
+            "templateName": "TIVRE_HTTP",
+            "message": {
+                "structure": "Dear {0} {1}, your docket is sucessfully outscanned from {2} to {3}",
+                "params": [
+                    "firstName",
+                    "lastName",
+                    "scanCode"
+                ]
+            },
+        },
+        {
+            "notificationType": "email",
+            "priority":"2",
+            "templateName": "LOCAL_SMTP",
+            "message": {
+                "structure": "<html><body>Dear {0} {1}, notification for scan code <strong>{2}</strong></body></html>",
+                "params": [
+                    "firstName",
+                    "lastName",
+                    "scanCode"
+                ]
+            },
         }
-    },
-    "Email": {
-
-    },
-    "Voice": {
-
-    },
-    "Whatsapp": {
-
-    }
-},
-{
-    "missionCode": "GBR",
-    "countryCode": "UAE",
-    "vacCode": "ABD",
-    "scanCode": "VAC to Courier Outscan",
-    "language": "Arabic",
-    "Sms": {
-        "templateName": "TIVRE_UNICODE",
-        "message": {
-            "structure": "{0} {1} مرحبا. شكرا لك على اهتمامك",
-            "params": [
-                "firstName",
-                "lastName"
-            ]
-        }
-    },
-    "Email": {
-
-    },
-    "Voice": {
-
-    },
-    "Whatsapp": {
-
-    }
+    ]
 }
+
